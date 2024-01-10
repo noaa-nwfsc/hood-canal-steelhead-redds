@@ -56,8 +56,8 @@ fit_dat$fitted = fit_brm_fitted[ , "Estimate"]
 fit_dat$upper95 =  fit_brm_fitted[ , "Q2.5"]
 fit_dat$lower95 =  fit_brm_fitted[ , "Q97.5"]
 g = ggplot(fit_dat) +
-    geom_vline(xintercept = 2009.5, color = "grey50", linetype = 2) +
-    geom_vline(xintercept = 2019.5, color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2) +
     geom_point(aes(x = year, y = abund_ln, color = treatment)) +
     geom_line(aes(x = year, y = fitted)) +
     geom_point(aes(x = year, y = fitted), size = 1) +
@@ -86,8 +86,8 @@ pred_s = pred_df[ , .(year_min = unique(year_min),
 setnames(pred_s, "stream_fac", "stream")
 
 g = ggplot(redd_yr) +
-    geom_vline(xintercept = 2009.5, color = "grey50", linetype = 2) +
-    geom_vline(xintercept = 2019.5, color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2) +
     geom_point(aes(x = year, y = abund_ln, color = treatment), alpha = 0.8) +
     geom_segment(data = pred_s, linewidth = 1,
                  aes(x = year_min, xend = year_max, y = median, yend = median,

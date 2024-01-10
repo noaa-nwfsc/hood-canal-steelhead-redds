@@ -77,7 +77,7 @@ redd_full[ , treatment := ifelse(stream %in% suppl, "supplemented", treatment)]
 ##   during = during supplementation    2011-2019
 ##   after  = post-supplementation      2020-2023
 redd_full[ , stage := "before"]
-redd_full[ , stage := ifelse(year > 2009, "during", stage)]
+redd_full[ , stage := ifelse(year > 2010, "during", stage)]
 redd_full[ , stage := ifelse(year > 2019, "after", stage)]
 
 
@@ -194,18 +194,23 @@ redd_yr_inter = redd_yr[ , .(abund_mean = mean(abund),
                              abund_stnd_sd = sd(abund_stnd)), by = .(treatment, stage)]
 redd_yr_inter[ , stage := factor(stage, levels = c("before", "during", "after"))]
 
+b1 = min(redd_yr$year[redd_yr$stage == "during"]) - 0.5
+b2 = max(redd_yr$year[redd_yr$stage == "during"]) + 0.5
+yrs_break = c(b1, b2)
 
 ## Save outputs
 save(redd_yr, file = "./outputs/redd_yr.RData")
 save(redd_yr_stream, file = "./outputs/redd_yr_stream.RData")
 save(redd_yr_inter, file = "./outputs/redd_yr_inter.RData")
+save(yrs_break, file = "./outputs/yrs_break.RData")
 
 
 
 ## Plots: abundance ts -------------------------------------
+
 g = ggplot(redd_yr) +
-    geom_vline(xintercept = 2009.5, color = "grey50", linetype = 2) +
-    geom_vline(xintercept = 2019.5, color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2) +
     aes(x = year, y = abund, color = treatment) +
     geom_point() +
     geom_line() +
@@ -217,8 +222,8 @@ print(g)
 ggsave("./figures/data/abundance_ts.jpg", width = 8, height = 4)
 
 g = ggplot(redd_yr) +
-    geom_vline(xintercept = 2009.5, color = "grey50", linetype = 2) +
-    geom_vline(xintercept = 2019.5, color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2) +
     aes(x = year, y = abund_ln, color = treatment) +
     geom_point() +
     geom_line() +
@@ -230,8 +235,8 @@ print(g)
 ggsave("./figures/data/abundance_ln_ts.jpg", width = 8, height = 4)
 
 g = ggplot(redd_yr) +
-    geom_vline(xintercept = 2009.5, color = "grey50", linetype = 2) +
-    geom_vline(xintercept = 2019.5, color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2) +
     aes(x = year, y = abund_stnd, color = treatment, groups = stream) +
     geom_point() +
     geom_line() +
@@ -245,8 +250,8 @@ ggsave("./figures/data/abundance_stnd_ts.jpg", width = 8, height = 4)
 
 ## Plots: abundance ts + group means -----------------------
 g = ggplot(redd_yr) +
-    geom_vline(xintercept = 2009.5, color = "grey50", linetype = 2) +
-    geom_vline(xintercept = 2019.5, color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2) +
     geom_point(aes(x = year, y = abund, color = treatment), alpha = 0.8) +
     geom_segment(data = redd_yr_stream, linewidth = 1,
                  aes(x = year_min, xend = year_max, y = abund_mean, yend = abund_mean,
@@ -265,8 +270,8 @@ print(g)
 ggsave("./figures/data/abundance_avg_stage.jpg", width = 8, height = 4)
 
 g = ggplot(redd_yr) +
-    geom_vline(xintercept = 2009.5, color = "grey50", linetype = 2) +
-    geom_vline(xintercept = 2019.5, color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2) +
     geom_point(aes(x = year, y = abund_ln, color = treatment), alpha = 0.8) +
     geom_segment(data = redd_yr_stream, linewidth = 1,
                  aes(x = year_min, xend = year_max, y = abund_ln_mean, yend = abund_ln_mean,
@@ -320,8 +325,8 @@ print(g)
 ggsave("./figures/data/spawn_doy_ts.jpg", width = 8, height = 4)
 
 g = ggplot(redd_yr) +
-    geom_vline(xintercept = 2009.5, color = "grey50", linetype = 2) +
-    geom_vline(xintercept = 2019.5, color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2) +
     geom_point(aes(x = year, y = spawn_doy, color = treatment), na.rm = TRUE) +
     geom_segment(data = redd_yr_stream, linewidth = 1, na.rm = TRUE,
                  aes(x = year_min, xend = year_max, y = spawn_doy_mean, yend = spawn_doy_mean,
