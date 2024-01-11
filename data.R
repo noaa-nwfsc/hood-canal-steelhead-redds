@@ -353,12 +353,24 @@ mean(ar1$phi)
 
 
 ## Response distribution -----------------------------------
-g = ggplot(redd_yr) +
+g1 = ggplot(redd_yr) +
     geom_density(aes(x = abund), adjust = 1.2) +
     labs(x = "Abundance", y = "Density") +
     scale_color_manual(values = M1) +
     theme_simple(grid = TRUE)
+print(g1)
+#
+g2 = ggplot(redd_yr) +
+    geom_density(aes(x = abund_ln), adjust = 1.2) +
+    labs(x = "log Abundance", y = "Density") +
+    scale_color_manual(values = M1) +
+    theme_simple(grid = TRUE)
+print(g2)
+#
+g = g1 + g2
 print(g)
+ggsave("./figures/data/abundance_dist.jpg", width = 8, height = 4)
+
 
 g = ggplot(redd_yr) +
     geom_density(aes(x = abund), adjust = 1.2) +
@@ -368,13 +380,6 @@ g = ggplot(redd_yr) +
     theme_simple(grid = TRUE)
 print(g)
 
-
-g = ggplot(redd_yr) +
-    geom_density(aes(x = abund_ln), adjust = 1.2) +
-    labs(x = "log Abundance", y = "Density") +
-    scale_color_manual(values = M1) +
-    theme_simple(grid = TRUE)
-print(g)
 
 g = ggplot(redd_yr) +
     geom_density(aes(x = abund_ln), adjust = 1.2) +
