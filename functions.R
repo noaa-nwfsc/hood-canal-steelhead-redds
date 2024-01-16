@@ -8,15 +8,12 @@ epred_df = function(epred, newdata) {
     ## epred = output from brms::posterior_epred
     ## newdata = data used as input to brms::posterior_epred
 
-    epred = as.data.table(epred)
     newdata = as.data.table(newdata)
-
     lst = vector("list", nrow(newdata))
+
     for(i in seq_along(lst)) {
-        dt = as.data.table(newdata[i, ])
-        pr = epred[ , ..i]
-        names(pr) = "sample"
-        lst[[i]] = cbind(dt, pr)
+        dt = newdata[i, ]
+        lst[[i]] = data.table(dt, sample = epred[ , i])
     }
     out = rbindlist(lst)
 
