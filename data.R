@@ -161,6 +161,20 @@ redd_yr = rbindlist(redd_lst)
 redd_yr[ , spawn_doy := as.numeric(format(spawn_date, "%j"))]
 
 
+## Use weir count of females to get Big Beef Creek redd abundance in 2007
+## 16 females passed the weir and assume 1.23 redds / female
+bbc_2007 = data.table(stream = "Big Beef Creek",
+                      year = 2007,
+                      treatment = "control",
+                      stage = "before",
+                      n_surveys = 0,
+                      abund = round(16 * 1.23, digits = 0),
+                      spawn_date = as.Date(NA),
+                      spawn_doy = NA)
+redd_yr = rbind(redd_yr, bbc_2007)
+redd_yr = redd_yr[order(stream, year), ]
+
+
 ## Check oddities
 # redd_raw[Stream == "Big Beef Creek" & RunYear == 2007, ]  ## no data
 # redd[stream == "Big Beef Creek" & year == 2022, ] ## zero redds
