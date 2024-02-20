@@ -3,6 +3,8 @@
 dir.create("./figures/fit/", showWarnings = FALSE)
 
 
+## Base model ----------------------------------------------
+
 ## Define priors
 mean(redd_yr$abund_ln)
 pr = c(prior(student_t(3, 3, 2.5), class = "Intercept"),
