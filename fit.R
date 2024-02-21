@@ -22,7 +22,7 @@ fit_brm = brm(abund_ln ~ treatment + stage + treatment:stage + (1 | stream_fac) 
                   iter = 2000,
                   warmup = 500,
                   chains = 4, cores = 4,
-                  control = list(adapt_delta = 0.90),
+                  control = list(adapt_delta = 0.99),
                   seed = 4242)
 fit_brm = add_criterion(fit_brm, c("bayes_R2"))
 save(fit_brm, file = "./outputs/fit_brm.RData")
