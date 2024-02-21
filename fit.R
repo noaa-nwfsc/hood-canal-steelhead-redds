@@ -185,3 +185,31 @@ g = ggplot(m) +
     theme(legend.position = "none")
 print(g)
 ggsave("./figures/fit/fit_brm_pairs.jpg", width = 6, height = 4)
+## R-squared 
+r2 <- as.data.frame(bayes_R2(fit_brm, summary = FALSE))
+g <- ggplot(r2) +
+    geom_histogram(aes(x = R2), bins = 20, color = "white",
+                   fill = "grey30", alpha = 0.5, na.rm = TRUE) +
+    labs(x = bquote(R^2), y = "Posterior density") +
+    theme_simple()
+print(g)
+ggsave("./figures/fit/fit_brm_r2.jpg", width = 5, height = 4)
+
+
+
+## PP checks -----------------------------------------------
+pp = posterior_predict(fit_brm, draw_ids = 1:30)
+lst = vector("list", nrow(pp))
+for(i in 1:nrow(pp)) {
+    dt = data.table(yrep = pp[i, ], n = i)
+    lst[[i]] = dt
+}
+ppc = rbindlist(lst)
+
+g = ggplot(ppc) +
+    geom_density(aes(x = yrep, group = n), color = "grey75", linewidth = 0.2) +
+    geom_density(data = redd_yr, aes(x = abund_ln), color = "black", linewidth = 1) +
+    labs(x = "log Abundance", y = "Density") +
+    theme_simple()
+print(g)
+ggsave("./figures/fit/fit_brm_ppc.jpg", width = 5, height = 4)
