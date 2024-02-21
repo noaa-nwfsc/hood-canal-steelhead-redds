@@ -64,7 +64,7 @@ g = ggplot(fit_dat) +
     geom_line(aes(x = year, y = fitted)) +
     geom_point(aes(x = year, y = fitted), size = 1) +
     geom_ribbon(aes(x = year, ymin = lower95, ymax = upper95), alpha = 0.20) +
-    labs(x = "Year", y = "log Abundance", color = "Treatment", title = "Fitted values") +
+    labs(x = "Year", y = "log Abundance", color = "Treatment") +
     scale_color_manual(values = M1) +
     facet_wrap( ~ stream, scale = "free_y") +
     theme_simple(grid = TRUE)
@@ -166,10 +166,15 @@ m = melt(x, measure.vars = names(x))
 m[ , treatment := ifelse(grepl("^c_", variable), "control", "supplemented")]
 m[ , comparison := gsub("^[cs]_", "", variable)]
 m[ , comparison := gsub("_", " - ", comparison)]
+m[ , value_exp := exp(value) + exp(..sig^2 / 2)]
+m[ , treatment := ifelse(treatment == "control", "Control", "Supplemented")]
 
+## log scale
 s = m[ , .(median = median(value),
            lower95 = quantile(value, probs = 0.025),
-           upper95 = quantile(value, probs = 0.975)), by = .(comparison, treatment)]
+           upper95 = quantile(value, probs = 0.975),
+           perc_pos = sum(value > 0) / .N), by = .(comparison, treatment)]
+s[ , perc_pos_lab := paste0(formatC(perc_pos * 100, digits = 2, format = "f"), "%")]
 
 g = ggplot(m) +
     geom_hline(yintercept = 0, color = "grey50", linetype = 2) +
@@ -177,7 +182,8 @@ g = ggplot(m) +
     geom_segment(data = s, linewidth = 1,
                  aes(x = comparison, xend = comparison, y = lower95, yend = upper95, color = comparison)) +
     geom_point(data = s, aes(x = comparison, y = median, color = comparison), size = 2) +
-    labs(x = "Contrast", y = "Estimate") +
+    geom_text(data = s, aes(x = comparison, y =2.3, label = perc_pos_lab), size = 3, color = "grey25") +
+    labs(x = "Comparison", y = "Estimate") +
     scale_color_manual(values = M1[3:5]) +
     scale_fill_manual(values = M1[3:5]) +
     facet_wrap( ~ treatment) +
@@ -185,6 +191,43 @@ g = ggplot(m) +
     theme(legend.position = "none")
 print(g)
 ggsave("./figures/fit/fit_brm_pairs.jpg", width = 6, height = 4)
+
+
+## original scale
+x = data.table(c_before_during = (exp(pred_mat[ , 1]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 2]) + exp((sig*sig) / 2)),
+               c_during_after  = (exp(pred_mat[ , 2]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 3]) + exp((sig*sig) / 2)),
+               c_before_after  = (exp(pred_mat[ , 1]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 3]) + exp((sig*sig) / 2)),
+               s_before_during = (exp(pred_mat[ , 4]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 5]) + exp((sig*sig) / 2)),
+               s_during_after  = (exp(pred_mat[ , 5]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 6]) + exp((sig*sig) / 2)),
+               s_before_after  = (exp(pred_mat[ , 4]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 6]) + exp((sig*sig) / 2)))
+m = melt(x, measure.vars = names(x))
+m[ , treatment := ifelse(grepl("^c_", variable), "control", "supplemented")]
+m[ , comparison := gsub("^[cs]_", "", variable)]
+m[ , comparison := gsub("_", " - ", comparison)]
+# m[ , value_exp := exp(value) + exp(..sig^2 / 2)]
+
+s = m[ , .(median = median(value),
+           lower95 = quantile(value, probs = 0.025),
+           upper95 = quantile(value, probs = 0.975)), by = .(comparison, treatment)]
+
+g = ggplot(m) +
+    geom_hline(yintercept = 1, color = "grey50", linetype = 2) +
+    # geom_violin(aes(x = comparison, y = value, fill = comparison), color = NA, alpha = 0.2) +
+    geom_segment(data = s, linewidth = 1,
+                 aes(x = comparison, xend = comparison, y = lower95, yend = upper95, color = comparison)) +
+    geom_point(data = s, aes(x = comparison, y = median, color = comparison), size = 2) +
+    labs(x = "Contrast", y = "Estimate") +
+    # ylim(-300, 300) +
+    scale_color_manual(values = M1[3:5]) +
+    scale_fill_manual(values = M1[3:5]) +
+    facet_wrap( ~ treatment) +
+    theme_simple(grid = TRUE) +
+    theme(legend.position = "none")
+print(g)
+ggsave("./figures/fit/fit_brm_pairs_exp.jpg", width = 6, height = 4)
+
+
+
 ## R-squared 
 r2 <- as.data.frame(bayes_R2(fit_brm, summary = FALSE))
 g <- ggplot(r2) +
