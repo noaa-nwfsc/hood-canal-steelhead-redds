@@ -1,6 +1,6 @@
 ## Reproduce project
 ##
-## ** make.R last run on 2024-01-10 **
+## ** make.R last run on 2024-02-21 **
 
 unlink("./figures", recursive = TRUE)
 unlink("./outputs", recursive = TRUE)
