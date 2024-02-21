@@ -108,11 +108,53 @@ print(g)
 ggsave("./figures/fit/fit_brm_stream_mean.jpg", width = 8, height = 4)
 
 
+## Stage means
+nd = expand.grid(stage = c("before", "during", "after"),
+                 treatment = c("control", "supplemented"))
+pred_mat = posterior_epred(fit_brm, newdata = nd, re_formula = NA, incl_autocor = FALSE)
+sig = as.data.frame(fit_brm)$sigma
+
+x = data.table(c_before = pred_mat[ , 1],
+               c_during = pred_mat[ , 2],
+               c_after  = pred_mat[ , 3],
+               s_before = pred_mat[ , 4],
+               s_during = pred_mat[ , 5],
+               s_after  = pred_mat[ , 6])
+m = melt(x, measure.vars = names(x))
+m[ , treatment := ifelse(grepl("^c_", variable), "control", "supplemented")]
+m[ , comparison := gsub("^[cs]_", "", variable)]
+m[ , comparison := gsub("_", " - ", comparison)]
+m[ , value_exp := exp(value) + exp(..sig^2 / 2)]
+m[ , treatment := ifelse(treatment == "control", "Control", "Supplemented")]
+m[ , comparison := factor(comparison, levels = c("before", "during", "after"))]
+
+## log scale
+s = m[ , .(median = median(value),
+           lower95 = quantile(value, probs = 0.025),
+           upper95 = quantile(value, probs = 0.975),
+           perc_pos = sum(value > 0) / .N), by = .(comparison, treatment)]
+s[ , perc_pos_lab := paste0(formatC(perc_pos * 100, digits = 2, format = "f"), "%")]
+
+g = ggplot(m) +
+    geom_violin(aes(x = comparison, y = value, fill = comparison), color = NA, alpha = 0.2) +
+    geom_segment(data = s, linewidth = 1,
+                 aes(x = comparison, xend = comparison, y = lower95, yend = upper95, color = comparison)) +
+    geom_point(data = s, aes(x = comparison, y = median, color = comparison), size = 2) +
+    labs(x = "Stage", y = "log Abundance") +
+    scale_color_manual(values = M1[3:5]) +
+    scale_fill_manual(values = M1[3:5]) +
+    facet_wrap( ~ treatment) +
+    theme_simple(grid = TRUE) +
+    theme(legend.position = "none")
+print(g)
+ggsave("./figures/fit/fit_brm_stage_mean.jpg", width = 6, height = 4)
+
 
 ## Pairwise comparisons
 nd = expand.grid(stage = c("before", "during", "after"),
                  treatment = c("control", "supplemented"))
 pred_mat = posterior_epred(fit_brm, newdata = nd, re_formula = NA, incl_autocor = FALSE)
+sig = as.data.frame(fit_brm)$sigma
 
 x = data.table(c_before_during = pred_mat[ , 1] - pred_mat[ , 2],
                c_during_after  = pred_mat[ , 2] - pred_mat[ , 3],
