@@ -467,6 +467,16 @@ g = ggplot(redd_yr) +
 print(g)
 ggsave("./figures/data/spawn_doy_avg_stage.jpg", width = 8, height = 4)
 
+g = ggplot(d[redds > 0, ]) +
+    geom_point(aes(x = doy, y = year, size = log(redds)), alpha = 0.5, shape = 16) +
+    scale_size_area(max_size = 3) +
+    labs(x = "Day of year", y = "Year") +
+    scale_color_viridis_c() +
+    facet_wrap( ~ stream, ncol = 2) +
+    theme_simple(grid = TRUE)
+print(g)
+ggsave("./figures/data/spawn_doy_bubble.jpg", width = 10, height = 10)
+
 
 
 ## AR1 estimates -------------------------------------------
