@@ -175,6 +175,7 @@ s = m[ , .(median = median(value),
            upper95 = quantile(value, probs = 0.975),
            perc_pos = sum(value > 0) / .N), by = .(comparison, treatment)]
 s[ , perc_pos_lab := paste0(formatC(perc_pos * 100, digits = 2, format = "f"), "%")]
+s[ , y := c(rep(0.06, 3), rep(0, 3))]
 
 g = ggplot(m) +
     geom_hline(yintercept = 0, color = "grey50", linetype = 2) +
@@ -191,6 +192,30 @@ g = ggplot(m) +
     theme(legend.position = "none")
 print(g)
 ggsave("./figures/fit/fit_brm_pairs.jpg", width = 6, height = 4)
+
+
+ove = m[ , .(overlap = overlapping::overlap(x = list(value[treatment == "Control"],
+                                                     value[treatment == "Supplemented"]))$OV),
+        by = .(comparison)]
+ove[ , overlap_lab := paste0("Overlap = ", formatC(overlap * 100, digits = 1, format = "f"), "%")]
+leg = data.table(comparison = rep("before - after", 2), x = c(1.05, -1.1), y = c(0.9, 0.9),
+                 treatment = c("Control", "Supplemented"))
+g = ggplot(m) +
+    geom_vline(xintercept = 0, color = "grey50", linetype = 2) +
+    geom_density(aes(x = value, fill = treatment), color = NA, alpha = 0.2) +
+    geom_linerange(data = s, linewidth = 0.5,
+                 aes(y = y, xmin = lower95, xmax = upper95, color = treatment)) +
+    geom_point(data = s, aes(x = median, y = y, color = treatment), size = 1) +
+    labs(x = "Estimate", y = "Posterior density") +
+    geom_text(data = ove, aes(x = -2.75, y = 1.3, label = overlap_lab), size = 3, color = "grey25", hjust = 0) +
+    geom_text(data = leg, aes(x = x, y = y, label = treatment, color = treatment), size = 3) +
+    scale_color_manual(values = M1) +
+    scale_fill_manual(values = M1) +
+    facet_wrap( ~ comparison, ncol = 1) +
+    theme_simple(grid = TRUE) +
+    theme(legend.position = "none")
+print(g)
+ggsave("./figures/fit/fit_brm_pairs_overlap.jpg", width = 4, height = 5)
 
 
 ## original scale

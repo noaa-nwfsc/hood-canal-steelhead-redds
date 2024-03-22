@@ -9,6 +9,7 @@ suppressPackageStartupMessages(library(brms))
 suppressPackageStartupMessages(library(emmeans))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(bayesplot))
+library(overlapping)
 library(patchwork)
 library(ggsimple) ## see: https://github.com/michaelmalick/ggsimple
 
