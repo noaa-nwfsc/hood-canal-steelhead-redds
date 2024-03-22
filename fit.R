@@ -156,18 +156,19 @@ nd = expand.grid(stage = c("before", "during", "after"),
 pred_mat = posterior_epred(fit_brm, newdata = nd, re_formula = NA, incl_autocor = FALSE)
 sig = as.data.frame(fit_brm)$sigma
 
-x = data.table(c_before_during = pred_mat[ , 1] - pred_mat[ , 2],
-               c_during_after  = pred_mat[ , 2] - pred_mat[ , 3],
-               c_before_after  = pred_mat[ , 1] - pred_mat[ , 3],
-               s_before_during = pred_mat[ , 4] - pred_mat[ , 5],
-               s_during_after  = pred_mat[ , 5] - pred_mat[ , 6],
-               s_before_after  = pred_mat[ , 4] - pred_mat[ , 6])
+x = data.table(c_during_before = pred_mat[ , 2] - pred_mat[ , 1],
+               c_after_during  = pred_mat[ , 3] - pred_mat[ , 2],
+               c_after_before  = pred_mat[ , 3] - pred_mat[ , 1],
+               s_during_before = pred_mat[ , 5] - pred_mat[ , 4],
+               s_after_during  = pred_mat[ , 6] - pred_mat[ , 5],
+               s_after_before  = pred_mat[ , 6] - pred_mat[ , 4])
 m = melt(x, measure.vars = names(x))
 m[ , treatment := ifelse(grepl("^c_", variable), "control", "supplemented")]
 m[ , comparison := gsub("^[cs]_", "", variable)]
 m[ , comparison := gsub("_", " - ", comparison)]
 m[ , value_exp := exp(value) + exp(..sig^2 / 2)]
 m[ , treatment := ifelse(treatment == "control", "Control", "Supplemented")]
+m[ , comparison := factor(comparison, levels = c("during - before", "after - during", "after - before"))]
 
 ## log scale
 s = m[ , .(median = median(value),
@@ -184,7 +185,7 @@ g = ggplot(m) +
                  aes(x = comparison, xend = comparison, y = lower95, yend = upper95, color = comparison)) +
     geom_point(data = s, aes(x = comparison, y = median, color = comparison), size = 2) +
     geom_text(data = s, aes(x = comparison, y =2.3, label = perc_pos_lab), size = 3, color = "grey25") +
-    labs(x = "Comparison", y = "Estimate") +
+    labs(x = "Comparison", y = "Difference in log abundance") +
     scale_color_manual(values = M1[3:5]) +
     scale_fill_manual(values = M1[3:5]) +
     facet_wrap( ~ treatment) +
@@ -198,15 +199,16 @@ ove = m[ , .(overlap = overlapping::overlap(x = list(value[treatment == "Control
                                                      value[treatment == "Supplemented"]))$OV),
         by = .(comparison)]
 ove[ , overlap_lab := paste0("Overlap = ", formatC(overlap * 100, digits = 1, format = "f"), "%")]
-leg = data.table(comparison = rep("before - after", 2), x = c(1.05, -1.1), y = c(0.9, 0.9),
+leg = data.table(comparison = rep("during - before", 2), x = c(-0.95, 2.1), y = c(0.9, 0.9),
                  treatment = c("Control", "Supplemented"))
+leg[ , comparison := factor(comparison, levels = c("during - before", "after - during", "after - before"))]
 g = ggplot(m) +
     geom_vline(xintercept = 0, color = "grey50", linetype = 2) +
     geom_density(aes(x = value, fill = treatment), color = NA, alpha = 0.2) +
     geom_linerange(data = s, linewidth = 0.5,
                  aes(y = y, xmin = lower95, xmax = upper95, color = treatment)) +
     geom_point(data = s, aes(x = median, y = y, color = treatment), size = 1) +
-    labs(x = "Estimate", y = "Posterior density") +
+    labs(x = "Difference in log abundance", y = "Posterior density") +
     geom_text(data = ove, aes(x = -2.75, y = 1.3, label = overlap_lab), size = 3, color = "grey25", hjust = 0) +
     geom_text(data = leg, aes(x = x, y = y, label = treatment, color = treatment), size = 3) +
     scale_color_manual(values = M1) +
@@ -219,16 +221,17 @@ ggsave("./figures/fit/fit_brm_pairs_overlap.jpg", width = 4, height = 5)
 
 
 ## original scale
-x = data.table(c_before_during = (exp(pred_mat[ , 1]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 2]) + exp((sig*sig) / 2)),
-               c_during_after  = (exp(pred_mat[ , 2]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 3]) + exp((sig*sig) / 2)),
-               c_before_after  = (exp(pred_mat[ , 1]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 3]) + exp((sig*sig) / 2)),
-               s_before_during = (exp(pred_mat[ , 4]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 5]) + exp((sig*sig) / 2)),
-               s_during_after  = (exp(pred_mat[ , 5]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 6]) + exp((sig*sig) / 2)),
-               s_before_after  = (exp(pred_mat[ , 4]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 6]) + exp((sig*sig) / 2)))
+x = data.table(c_during_before = (exp(pred_mat[ , 2]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 1]) + exp((sig*sig) / 2)),
+               c_after_during  = (exp(pred_mat[ , 3]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 2]) + exp((sig*sig) / 2)),
+               c_after_before  = (exp(pred_mat[ , 3]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 1]) + exp((sig*sig) / 2)),
+               s_during_before = (exp(pred_mat[ , 5]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 4]) + exp((sig*sig) / 2)),
+               s_after_during  = (exp(pred_mat[ , 6]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 5]) + exp((sig*sig) / 2)),
+               s_after_before  = (exp(pred_mat[ , 6]) + exp((sig*sig) / 2)) - (exp(pred_mat[ , 4]) + exp((sig*sig) / 2)))
 m = melt(x, measure.vars = names(x))
 m[ , treatment := ifelse(grepl("^c_", variable), "control", "supplemented")]
 m[ , comparison := gsub("^[cs]_", "", variable)]
 m[ , comparison := gsub("_", " - ", comparison)]
+m[ , comparison := factor(comparison, levels = c("during - before", "after - during", "after - before"))]
 # m[ , value_exp := exp(value) + exp(..sig^2 / 2)]
 
 s = m[ , .(median = median(value),
@@ -241,7 +244,7 @@ g = ggplot(m) +
     geom_segment(data = s, linewidth = 1,
                  aes(x = comparison, xend = comparison, y = lower95, yend = upper95, color = comparison)) +
     geom_point(data = s, aes(x = comparison, y = median, color = comparison), size = 2) +
-    labs(x = "Contrast", y = "Estimate") +
+    labs(x = "Contrast", y = "Difference in log abundance") +
     # ylim(-300, 300) +
     scale_color_manual(values = M1[3:5]) +
     scale_fill_manual(values = M1[3:5]) +
