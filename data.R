@@ -312,10 +312,22 @@ g = ggplot(redd_yr) +
     geom_line() +
     labs(x = "Year", y = "log Abundance", color = "Treatment") +
     scale_color_manual(values = M1) +
-    facet_wrap( ~ stream, scale = "free_y") +
+    facet_wrap( ~ stream) +
     theme_simple(grid = TRUE)
 print(g)
 ggsave("./figures/data/abundance_ln_ts.jpg", width = 8, height = 4)
+
+g = ggplot(redd_yr) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2) +
+    aes(x = year, y = abund_ln, color = treatment, groups = stream) +
+    geom_point() +
+    geom_line() +
+    labs(x = "Year", y = "log Abundance", color = "Treatment") +
+    scale_color_manual(values = M1) +
+    theme_simple(grid = TRUE)
+print(g)
+ggsave("./figures/data/abundance_ln_ts_single.jpg", width = 6, height = 4)
 
 g = ggplot(redd_yr) +
     geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
@@ -438,9 +450,11 @@ ggsave("./figures/data/abundance_ln_inter.jpg", width = 6, height = 4)
 ## Plots: spawn timing -------------------------------------
 g = ggplot(redd_yr) +
     aes(x = year, y = spawn_doy, color = treatment) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2) +
     geom_point(na.rm = TRUE) +
     geom_line(na.rm = TRUE) +
-    labs(x = "Year", y = "Median spawn day") +
+    labs(x = "Year", y = "Median spawn day", color = "Treatment") +
     scale_color_manual(values = M1) +
     facet_wrap( ~ stream) +
     theme_simple(grid = TRUE)
@@ -462,21 +476,36 @@ g = ggplot(redd_yr) +
     labs(x = "Year", y = "Median spawn day", color = "Treatment", fill = "Treatment") +
     scale_color_manual(values = M1) +
     scale_fill_manual(values = M1) +
-    facet_wrap( ~ stream, scale = "free_y") +
+    facet_wrap( ~ stream) +
     theme_simple(grid = TRUE)
 print(g)
 ggsave("./figures/data/spawn_doy_avg_stage.jpg", width = 8, height = 4)
 
 g = ggplot(redd[redds > 0, ]) +
-    geom_point(aes(x = doy, y = year, size = log(redds)), alpha = 0.5, shape = 16) +
+    geom_hline(yintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_hline(yintercept = yrs_break[2], color = "grey50", linetype = 2) +
+    geom_point(data = redd[redds == 0, ], aes(x = doy, y = year), shape = 4, size = 0.2,
+               color = "grey60") +
+    geom_point(aes(x = doy, y = year, size = log(redds), color = log(redds)), alpha = 0.75, shape = 16) +
     scale_size_area(max_size = 3) +
     labs(x = "Day of year", y = "Year") +
     scale_color_viridis_c() +
     facet_wrap( ~ stream, ncol = 2) +
-    theme_simple(grid = TRUE)
+    theme_simple()
 print(g)
 ggsave("./figures/data/spawn_doy_bubble.jpg", width = 10, height = 10)
 
+g = ggplot(redd) +
+    geom_hline(yintercept = yrs_break[1], color = "grey50", linetype = 2) +
+    geom_hline(yintercept = yrs_break[2], color = "grey50", linetype = 2) +
+    geom_tile(aes(x = doy, y = year, fill = log(redds))) +
+    labs(x = "Day of year", y = "Year") +
+    scale_fill_viridis_c() +
+    xlim(10, 200) +
+    facet_wrap( ~ stream, ncol = 1) +
+    theme_simple()
+print(g)
+ggsave("./figures/data/spawn_doy_tile.jpg", width = 10, height = 10)
 
 
 ## AR1 estimates -------------------------------------------
