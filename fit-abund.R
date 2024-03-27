@@ -1,63 +1,63 @@
-## Fit models
+## Fit abundance models
 
-dir.create("./figures/fit/", showWarnings = FALSE)
+dir.create("./figures/fit-abund/", showWarnings = FALSE)
 
 
-## Base model ----------------------------------------------
+## Abundance: base model -----------------------------------
 
 ## Define priors
 mean(redd_yr$abund_ln)
-pr = c(prior(student_t(3, 3, 2.5), class = "Intercept"),
-       prior(student_t(3, 0, 2.5), class = "ar", lb = -1, ub = 1),
-       prior(student_t(3, 0, 2.5), class = "b"),
-       prior(student_t(3, 0, 2.5), class = "sd", lb = 0),
-       prior(student_t(3, 0, 2.5), class = "sigma", lb = 0))
+pr_abn = c(prior(student_t(3, 3, 2.5), class = "Intercept"),
+           prior(student_t(3, 0, 2.5), class = "ar", lb = -1, ub = 1),
+           prior(student_t(3, 0, 2.5), class = "b"),
+           prior(student_t(3, 0, 2.5), class = "sd", lb = 0),
+           prior(student_t(3, 0, 2.5), class = "sigma", lb = 0))
 
 
 ## Fit model
-fit_brm = brm(abund_ln ~ treatment + stage + treatment:stage + (1 | stream_fac) + (1 | year_fac) +
+fit_abn = brm(abund_ln ~ treatment + stage + treatment:stage + (1 | stream_fac) + (1 | year_fac) +
                     ar(year, gr = stream_fac, p = 1),
                   data = redd_yr,
-                  prior = pr,
+                  prior = pr_abn,
                   iter = 2000,
                   warmup = 500,
                   chains = 4, cores = 4,
                   control = list(adapt_delta = 0.99),
                   seed = 4242)
-fit_brm = add_criterion(fit_brm, c("bayes_R2"))
-save(fit_brm, file = "./outputs/fit_brm.RData")
+fit_abn = add_criterion(fit_abn, c("bayes_R2"))
+save(fit_abn, file = "./outputs/fit_abn.RData")
 
 
 ## Model checks
-prior_summary(fit_brm)
-check_hmc_diagnostics(fit_brm$fit)
-rhat_highest(fit_brm$fit)
-neff_lowest(fit_brm$fit)
-hist(fit_brm$criteria$bayes_R2)
-pp_check(fit_brm, type = "dens_overlay", ndraws = 50)
-pp_check(fit_brm, type = "scatter_avg", ndraws = 10)
+prior_summary(fit_abn)
+check_hmc_diagnostics(fit_abn$fit)
+rhat_highest(fit_abn$fit)
+neff_lowest(fit_abn$fit)
+hist(fit_abn$criteria$bayes_R2)
+pp_check(fit_abn, type = "dens_overlay", ndraws = 50)
+pp_check(fit_abn, type = "scatter_avg", ndraws = 10)
 
 
 ## Model summaries
-summary(fit_brm)
-ranef(fit_brm)
-fixef(fit_brm)
+summary(fit_abn)
+ranef(fit_abn)
+fixef(fit_abn)
 
-ce = conditional_effects(fit_brm)
-plot(ce, ask = FALSE)
+ce_abn = conditional_effects(fit_abn)
+plot(ce_abn, ask = FALSE)
 
-em = emmeans(fit_brm, pairwise ~ stage | treatment)
-plot(pairs(em))
+em_abn = emmeans(fit_abn, pairwise ~ stage | treatment)
+plot(pairs(em_abn))
 
 
 
 ## Fitted values
-fit_dat = copy(redd_yr)
-fit_brm_fitted = fitted(fit_brm)
-fit_dat$fitted = fit_brm_fitted[ , "Estimate"]
-fit_dat$upper95 =  fit_brm_fitted[ , "Q2.5"]
-fit_dat$lower95 =  fit_brm_fitted[ , "Q97.5"]
-g = ggplot(fit_dat) +
+fit_dat_abn = copy(redd_yr)
+fit_abn_fitted = fitted(fit_abn)
+fit_dat_abn$fitted = fit_abn_fitted[ , "Estimate"]
+fit_dat_abn$upper95 =  fit_abn_fitted[ , "Q2.5"]
+fit_dat_abn$lower95 =  fit_abn_fitted[ , "Q97.5"]
+g = ggplot(fit_dat_abn) +
     geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2) +
     geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2) +
     geom_point(aes(x = year, y = abund_ln, color = treatment)) +
@@ -69,13 +69,13 @@ g = ggplot(fit_dat) +
     facet_wrap( ~ stream, scale = "free_y") +
     theme_simple(grid = TRUE)
 print(g)
-ggsave("./figures/fit/fit_brm_fitted.jpg", width = 8, height = 4)
+ggsave("./figures/fit-abund/fit_abn_fitted.jpg", width = 8, height = 4)
 
 
 ## Treatment means by stream
 nd_stream = redd_yr_stream[ , .(stream, treatment, stage, year_min, year_max)]
 setnames(nd_stream, "stream", "stream_fac")
-pred_mat = posterior_epred(fit_brm, newdata = nd_stream,
+pred_mat = posterior_epred(fit_abn, newdata = nd_stream,
                            re_formula = ~ (1 | stream_fac),
                            incl_autocor = FALSE)
 pred_df = epred_df(pred_mat, nd_stream)
@@ -105,15 +105,14 @@ g = ggplot(redd_yr) +
     facet_wrap( ~ stream, scale = "free_y") +
     theme_simple(grid = TRUE)
 print(g)
-ggsave("./figures/fit/fit_brm_stream_mean.jpg", width = 8, height = 4)
+ggsave("./figures/fit-abund/fit_abn_stream_mean.jpg", width = 8, height = 4)
 
 
 ## Stage means
 nd = expand.grid(stage = c("before", "during", "after"),
                  treatment = c("control", "supplemented"))
-pred_mat = posterior_epred(fit_brm, newdata = nd, re_formula = NA, incl_autocor = FALSE)
-sig = as.data.frame(fit_brm)$sigma
-
+pred_mat = posterior_epred(fit_abn, newdata = nd, re_formula = NA, incl_autocor = FALSE)
+sig = as.data.frame(fit_abn)$sigma
 x = data.table(c_before = pred_mat[ , 1],
                c_during = pred_mat[ , 2],
                c_after  = pred_mat[ , 3],
@@ -138,7 +137,8 @@ s[ , perc_pos_lab := paste0(formatC(perc_pos * 100, digits = 2, format = "f"), "
 g = ggplot(m) +
     geom_violin(aes(x = comparison, y = value, fill = comparison), color = NA, alpha = 0.2) +
     geom_segment(data = s, linewidth = 1,
-                 aes(x = comparison, xend = comparison, y = lower95, yend = upper95, color = comparison)) +
+                 aes(x = comparison, xend = comparison, y = lower95, yend = upper95,
+                     color = comparison)) +
     geom_point(data = s, aes(x = comparison, y = median, color = comparison), size = 2) +
     labs(x = "Stage", y = "log Abundance") +
     scale_color_manual(values = M1[3:5]) +
@@ -147,14 +147,14 @@ g = ggplot(m) +
     theme_simple(grid = TRUE) +
     theme(legend.position = "none")
 print(g)
-ggsave("./figures/fit/fit_brm_stage_mean.jpg", width = 6, height = 4)
+ggsave("./figures/fit-abund/fit_abn_stage_mean.jpg", width = 6, height = 4)
 
 
 ## Pairwise comparisons
 nd = expand.grid(stage = c("before", "during", "after"),
                  treatment = c("control", "supplemented"))
-pred_mat = posterior_epred(fit_brm, newdata = nd, re_formula = NA, incl_autocor = FALSE)
-sig = as.data.frame(fit_brm)$sigma
+pred_mat = posterior_epred(fit_abn, newdata = nd, re_formula = NA, incl_autocor = FALSE)
+sig = as.data.frame(fit_abn)$sigma
 
 x = data.table(c_during_before = pred_mat[ , 2] - pred_mat[ , 1],
                c_after_during  = pred_mat[ , 3] - pred_mat[ , 2],
@@ -182,9 +182,10 @@ g = ggplot(m) +
     geom_hline(yintercept = 0, color = "grey50", linetype = 2) +
     geom_violin(aes(x = comparison, y = value, fill = comparison), color = NA, alpha = 0.2) +
     geom_segment(data = s, linewidth = 1,
-                 aes(x = comparison, xend = comparison, y = lower95, yend = upper95, color = comparison)) +
+                 aes(x = comparison, xend = comparison, y = lower95, yend = upper95,
+                     color = comparison)) +
     geom_point(data = s, aes(x = comparison, y = median, color = comparison), size = 2) +
-    geom_text(data = s, aes(x = comparison, y =2.3, label = perc_pos_lab), size = 3, color = "grey25") +
+    geom_text(data = s, aes(x = comparison, y = 2.3, label = perc_pos_lab), size = 3, color = "grey25") +
     labs(x = "Comparison", y = "Difference in log abundance") +
     scale_color_manual(values = M1[3:5]) +
     scale_fill_manual(values = M1[3:5]) +
@@ -192,7 +193,7 @@ g = ggplot(m) +
     theme_simple(grid = TRUE) +
     theme(legend.position = "none")
 print(g)
-ggsave("./figures/fit/fit_brm_pairs.jpg", width = 6, height = 4)
+ggsave("./figures/fit-abund/fit_abn_pairs.jpg", width = 6, height = 4)
 
 
 ove = m[ , .(overlap = overlapping::overlap(x = list(value[treatment == "Control"],
@@ -217,7 +218,7 @@ g = ggplot(m) +
     theme_simple(grid = TRUE) +
     theme(legend.position = "none")
 print(g)
-ggsave("./figures/fit/fit_brm_pairs_overlap.jpg", width = 4, height = 5)
+ggsave("./figures/fit-abund/fit_abn_pairs_overlap.jpg", width = 4, height = 5)
 
 
 ## original scale
@@ -252,35 +253,35 @@ g = ggplot(m) +
     theme_simple(grid = TRUE) +
     theme(legend.position = "none")
 print(g)
-ggsave("./figures/fit/fit_brm_pairs_exp.jpg", width = 6, height = 4)
+ggsave("./figures/fit-abund/fit_abn_pairs_exp.jpg", width = 6, height = 4)
 
 
 
 ## R-squared 
-r2 <- as.data.frame(bayes_R2(fit_brm, summary = FALSE))
+r2 <- as.data.frame(bayes_R2(fit_abn, summary = FALSE))
 g <- ggplot(r2) +
     geom_histogram(aes(x = R2), bins = 20, color = "white",
                    fill = "grey30", alpha = 0.5, na.rm = TRUE) +
     labs(x = bquote(R^2), y = "Posterior density") +
     theme_simple()
 print(g)
-ggsave("./figures/fit/fit_brm_r2.jpg", width = 5, height = 4)
+ggsave("./figures/fit-abund/fit_abn_r2.jpg", width = 5, height = 4)
 
 
 
-## PP checks -----------------------------------------------
-pp = posterior_predict(fit_brm, draw_ids = 1:30)
+## PP checks
+pp = posterior_predict(fit_abn, draw_ids = 1:30)
 lst = vector("list", nrow(pp))
 for(i in 1:nrow(pp)) {
     dt = data.table(yrep = pp[i, ], n = i)
     lst[[i]] = dt
 }
 ppc = rbindlist(lst)
-
+#
 g = ggplot(ppc) +
     geom_density(aes(x = yrep, group = n), color = "grey75", linewidth = 0.2) +
     geom_density(data = redd_yr, aes(x = abund_ln), color = "black", linewidth = 1) +
     labs(x = "log Abundance", y = "Density") +
     theme_simple()
 print(g)
-ggsave("./figures/fit/fit_brm_ppc.jpg", width = 5, height = 4)
+ggsave("./figures/fit-abund/fit_abn_ppc.jpg", width = 5, height = 4)

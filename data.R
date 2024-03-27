@@ -522,3 +522,12 @@ print(g2)
 g = g1 + g2
 print(g)
 ggsave("./figures/data/abundance_rkm_dist.jpg", width = 8, height = 4)
+
+
+g1 = ggplot(redd_yr[!is.na(spawn_doy), ]) +
+    geom_density(aes(x = spawn_doy), adjust = 1.2) +
+    labs(x = "Median Spawn Day of Year", y = "Density") +
+    scale_color_manual(values = M1) +
+    theme_simple(grid = TRUE)
+print(g1)
+ggsave("./figures/data/spawn_doy_density.jpg", width = 8, height = 4)
