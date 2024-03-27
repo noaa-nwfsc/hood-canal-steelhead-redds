@@ -217,6 +217,21 @@ print(g)
 ggsave("./figures/fit-spawn/fit_spt_pairs_overlap.jpg", width = 4, height = 5)
 
 
+## Year effect
+ref_mat = ranef(fit_spt)[[2]][,,1]
+ref_spt = data.table(year = row.names(ref_mat),
+                     estimate = ref_mat[ , "Estimate"],
+                     lower95 = ref_mat[ , "Q2.5"],
+                     upper95 = ref_mat[ , "Q97.5"])
+g = ggplot(ref_spt) +
+    geom_hline(yintercept = 0, color = "grey50", linetype = 2) +
+    geom_linerange(linewidth = 0.5, aes(x = year, ymin = lower95, ymax = upper95)) +
+    geom_point(aes(x = year, y = estimate), size = 1) +
+    labs(x = "Year", y = "Effect") +
+    theme_simple()
+print(g)
+ggsave("./figures/fit-spawn/fit_spt_yr_effect.jpg", width = 6, height = 4)
+
 
 ## R-squared 
 r2 <- as.data.frame(bayes_R2(fit_spt, summary = FALSE))
