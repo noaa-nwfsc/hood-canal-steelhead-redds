@@ -36,6 +36,7 @@ neff_lowest(fit_abn$fit)
 hist(fit_abn$criteria$bayes_R2)
 pp_check(fit_abn, type = "dens_overlay", ndraws = 50)
 pp_check(fit_abn, type = "scatter_avg", ndraws = 10)
+mcmc_trace(fit_abn)
 
 
 ## Model summaries

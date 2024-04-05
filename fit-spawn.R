@@ -36,6 +36,7 @@ neff_lowest(fit_spt$fit)
 hist(fit_spt$criteria$bayes_R2)
 pp_check(fit_spt, type = "dens_overlay", ndraws = 50)
 pp_check(fit_spt, type = "scatter_avg", ndraws = 10)
+mcmc_trace(fit_spt)
 
 
 ## Model summaries
