@@ -172,6 +172,85 @@ ggsave("./figures/pub/spawn_ts.jpg", width = 4, height = 4)
 
 
 
+## Spawn timing bar ----------------------------------------
+dat = copy(redd_yr)
+dat[ , stream_lab := as.character(stream)]
+dat[ , stream_lab := gsub(" + Hatchery Cr", "", stream_lab, fixed = TRUE)]
+dat[ , stream_lab := gsub(", SF + Vance Cr", "", stream_lab, fixed = TRUE)]
+unique(dat$stream_lab)
+#
+or = dat[ , .(mean = mean(spawn_doy, na.rm = TRUE)), .(stream_lab)]
+or = or[order(mean), ]
+levs = or$stream_lab[c(1, 3, 4, 5, 2, 6, 7)]
+dat[ , stream_lab := factor(stream_lab, levels = c(levs))]
+dat[ , year_fac := factor(year, levels = 2023:2007)]
+#
+xint = seq(25, 150, 25)
+M1_col = alpha(M1[3:5], 0.6)
+M1_fill = alpha(M1[3:5], 0.2)
+M1_solid = M1[3:5]
+xlim = c(0, 155)
+brks = seq(0, 150, 25)
+expd = c(0, 0)
+#
+leg = data.table(stream_lab = rep("Big Beef Creek", 3),
+                 stage = c("Before", "During", "After"),
+                 year_fac = c("2008", "2015", "2022"),
+                 x = 83)
+leg[ , stage := factor(stage, levels = unique(stage))]
+#
+ylab = c("2007" =  "2007",
+         "2008" =  "",
+         "2009" =  "",
+         "2010" =  "",
+         "2011" =  "2011",
+         "2012" =  "",
+         "2013" =  "",
+         "2014" =  "",
+         "2015" =  "2015",
+         "2016" =  "",
+         "2017" =  "",
+         "2018" =  "",
+         "2019" =  "2019",
+         "2020" =  "",
+         "2021" =  "",
+         "2022" =  "",
+         "2023" =  "2023")
+#
+lst = vector("list", length(levs))
+for(i in seq_along(lst)) {
+    if(i == 7) xlab = "Median spawn day of year" else xlab = NULL
+    g = ggplot(dat[stream_lab == levs[i], ]) +
+        geom_vline(xintercept = xint, color = "grey85", linetype = 1) +
+        geom_col(aes(y = year_fac, x = spawn_doy, fill = stage, color = stage), na.rm = TRUE) +
+        scale_color_manual(values = M1_col) +
+        scale_fill_manual(values = M1_fill) +
+        scale_x_continuous(breaks = brks, limits = xlim, expand = expd) +
+        scale_y_discrete(labels = ylab) +
+        labs(x = xlab, y = NULL, subtitle = levs[i]) +
+        theme_simple(base_size = 9) +
+        theme(legend.position = "none") +
+        theme(plot.title = element_text(hjust = 1))
+    # if(i %in% 1:4) g = g + ylab("Control")
+    # if(i %in% 5:7) g = g + ylab("Supplemented")
+    if(i == 1) g = g + ggtitle("Control")
+    if(i == 5) g = g + ggtitle("Supplemented")
+    if(i == 1) g = g + geom_text(data = leg, aes(x = x, y = year_fac, label = stage),
+                                 color = M1_solid, hjust = 0, size = 3)
+    if(i == 4) bot = 10 else bot = 5
+    g = g + theme(plot.margin = unit(c(0, 0, bot, 0), "pt"))
+    if(!i %in% c(4, 7)) g = g + theme(axis.text.x = element_blank())
+    print(g)
+    lst[[i]] = g
+}
+#
+g = lst[[1]] + lst[[2]] + lst[[3]] + lst[[4]] + lst[[5]] + lst[[6]] + lst[[7]] + plot_layout(ncol = 1,
+ axis_titles = "collect")
+print(g)
+ggsave("./figures/pub/spawn_bar.jpg", width = 4, height = 8)
+
+
+
 ## Spawn tile ----------------------------------------------
 dat = copy(redd)
 dat[ , stream_lab := as.character(stream)]
