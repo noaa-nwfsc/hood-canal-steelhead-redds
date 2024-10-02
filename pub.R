@@ -423,3 +423,31 @@ g = ggplot(ref_spt) +
 print(g)
 ggsave("./figures/pub/fit_spt_stream_effect.jpg", width = 4, height = 4)
 
+
+
+## Spawn timing SD: timeseries -----------------------------
+dat = copy(redd_yr)
+dat[ , stream_lab := as.character(stream)]
+dat[ , stream_lab := gsub(" + Hatchery Cr", "", stream_lab, fixed = TRUE)]
+dat[ , stream_lab := gsub(", SF + Vance Cr", "", stream_lab, fixed = TRUE)]
+unique(dat$stream_lab)
+
+or = dat[ , .(mean = mean(abund)), .(treatment, stream_lab)]
+or = or[order(treatment, mean), ]
+levs = or$stream_lab[c(1, 5, 2, 6, 3, 7, 4)]
+dat[ , stream_lab := factor(stream_lab, levels = c(levs))]
+
+g = ggplot(dat) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2, linewidth = 0.25) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2, linewidth = 0.25) +
+    aes(x = year, y = spawn_doy_sd, color = treatment) +
+    geom_point(size = 1) +
+    geom_line(linewidth = 0.5) +
+    # geom_smooth(method = "loess", formula = y ~ x, color = "grey40", linewidth = 0.2, se = FALSE) +
+    labs(x = "Year", y = "Standard deviation of spawn day", color = "") +
+    scale_color_manual(values = M1) +
+    facet_wrap( ~ stream_lab, ncol = 2, scale = "free_y") +
+    theme_simple(base_size = 8, grid = TRUE) +
+    theme(legend.position = c(0.75, 0.12))
+print(g)
+ggsave("./figures/pub/spawn_sd_ts.jpg", width = 4, height = 4)

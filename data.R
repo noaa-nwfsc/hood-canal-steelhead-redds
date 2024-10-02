@@ -174,11 +174,16 @@ for(i in seq_along(redd_lst)) {
         ## Calc median spawn date: rep the date for each redd and take median
         sub = m[redds > 0, ]
         lst = vector("list", nrow(sub))
+        lst_sd = vector("list", nrow(sub))
         for(j in 1:nrow(sub)) lst[[j]] = rep(sub$date[j], sub$redds[j])
+        for(j in 1:nrow(sub)) lst_sd[[j]] = rep(sub$doy[j], sub$redds[j])
         msd = median(do.call("c", lst))
+        # browser()
+        sdsd = sd(do.call("c", lst_sd))
     } else {
         ## systems that had no redds for a year are set to NA
         msd = as.Date(NA)
+        sdsd = as.numeric(NA)
     }
     dt = data.table(stream = unique(m$stream),
                     year = unique(m$year),
@@ -187,7 +192,8 @@ for(i in seq_along(redd_lst)) {
                     n_surveys = nrow(m),
                     abund = max(m$redds_sum),
                     # abund_rkm = max(m$redds_rkm_sum),
-                    spawn_date = msd)
+                    spawn_date = msd,
+                    spawn_doy_sd = sdsd)
     redd_lst[[i]] = dt
 }
 redd_yr = rbindlist(redd_lst)
@@ -204,6 +210,7 @@ bbc_2007 = data.table(stream = "Big Beef Creek",
                       abund = round(16 * 1.23, digits = 0),
                       # abund_rkm = round(16 * 1.23, digits = 0) / (5.7 * 1.60934),
                       spawn_date = as.Date(NA),
+                      spawn_doy_sd = NA,
                       spawn_doy = NA)
 redd_yr = rbind(redd_yr, bbc_2007)
 redd_yr = redd_yr[order(stream, year), ]

@@ -24,7 +24,7 @@ fit_spt = brm(spawn_doy ~ treatment + stage + treatment:stage + (1 | stream_fac)
                   chains = 4, cores = 4,
                   control = list(adapt_delta = 0.99),
                   seed = 4242)
-fit_spt = add_criterion(fit_spt, c("bayes_R2"))
+fit_spt = add_criterion(fit_spt, c("bayes_R2", "loo"))
 save(fit_spt, file = "./outputs/fit_spt.RData")
 
 
@@ -235,8 +235,8 @@ ggsave("./figures/fit-spawn/fit_spt_yr_effect.jpg", width = 6, height = 4)
 
 
 ## R-squared 
-r2 <- as.data.frame(bayes_R2(fit_spt, summary = FALSE))
-g <- ggplot(r2) +
+r2 = as.data.frame(bayes_R2(fit_spt, summary = FALSE))
+g = ggplot(r2) +
     geom_histogram(aes(x = R2), bins = 20, color = "white",
                    fill = "grey30", alpha = 0.5, na.rm = TRUE) +
     labs(x = bquote(R^2), y = "Posterior density") +
