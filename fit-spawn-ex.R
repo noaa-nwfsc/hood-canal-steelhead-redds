@@ -89,6 +89,20 @@ print(g)
 ggsave("./figures/fit-spawn-ex/spawn_doy_var.jpg", width = 7, height = 6)
 
 
+dat = redd_ex[ , .(doy_var = var(doy), doy_anom_var = var(doy_anom)), by = .(stage, treatment, stream)]
+g = ggplot(dat) +
+    geom_col(aes(x = stage, y = doy_anom_var, fill = stage, color = stage), alpha = 0.25) +
+    labs(x = "Year", y = "Day of year", color = "") +
+    facet_wrap( ~ stream) +
+    labs(x = "", y = "Spawn day variance") +
+    scale_fill_manual(values = M1[3:5]) +
+    scale_color_manual(values = M1[3:5]) +
+    theme_simple(grid = TRUE) +
+    theme(legend.position = "none")
+print(g)
+ggsave("./figures/fit-spawn-ex/spawn_doy_var_stream.jpg", width = 7, height = 6)
+
+
 
 ## F-test -- changing variance -----------------------------
 cb = redd_ex[treatment == "control" & stage == "before", ]
@@ -106,66 +120,138 @@ var.test(sb$doy_anom, sa$doy_anom)   ## sig
 ## Bootstrap test -- changing variance ---------------------
 ## Test statistic: var before / var after
 
-boot_dat = redd_ex[stage != "during", ]
-lst = vector("list", 1000)
+set.seed(4242)
+boot_dat_lst = vector("list", 1000)
+s = split(redd_ex, by = "stream")
 for(i in 1:1000) {
-    ind = sample(1:nrow(boot_dat), nrow(boot_dat), replace = TRUE)
-    dat_i = boot_dat[ind]
-    dat_i[ , iter := i]
-    lst[[i]] = dat_i
+    s_lst = vector("list", length(s))
+    for(j in seq_along(s)) {
+        s_j = s[[j]]
+        ind = sample(1:nrow(s_j), nrow(s_j), replace = TRUE)
+        dat_j = s_j[ind]
+        dat_j[ , iter := i]
+        s_lst[[j]] = dat_j
+    }
+    boot_dat_lst[[i]] = rbindlist(s_lst)
 }
-spt_boot = rbindlist(lst)
+spt_boot = rbindlist(boot_dat_lst)
 spt_boot[ , doy_anom := doy - mean(doy), .(iter, stream)]
 save(spt_boot, file = "./outputs/spt_boot.RData")
 
-spt_boot_var = spt_boot[ , .(var = var(doy), var_anom = var(doy_anom)), by = .(iter, treatment, stage)]
-save(spt_boot_var, file = "./outputs/spt_boot_var.RData")
 
-cb = spt_boot_var[treatment == "control" & stage == "before"]
-ca = spt_boot_var[treatment == "control" & stage == "after"]
-sb = spt_boot_var[treatment == "supplemented" & stage == "before"]
-sa = spt_boot_var[treatment == "supplemented" & stage == "after"]
+## Summarize by stream
+spt_boot_stream = spt_boot[ , .(var = var(doy), var_anom = var(doy_anom)),
+                           by = .(iter, treatment, stage, stream)]
+save(spt_boot_stream, file = "./outputs/spt_boot_stream.RData")
 
-boot_ratio_c = data.table(treatment = "control",
-                          var_ratio = cb$var / ca$var,
-                          var_anom_ratio = cb$var_anom / ca$var_anom)
-boot_ratio_t = data.table(treatment = "supplemented",
-                          var_ratio = sb$var / sa$var,
-                          var_anom_ratio = sb$var_anom / sa$var_anom)
-spt_boot_ratio = rbind(boot_ratio_c, boot_ratio_t)
-save(spt_boot_ratio, file = "./outputs/spt_boot_ratio.RData")
+spt_boot_stream_s = spt_boot_stream[ , .(mean_var = mean(var),
+                                         lower95_var = quantile(var, probs = 0.025),
+                                         upper95_var = quantile(var, probs = 0.975),
+                                         mean_var_anom = mean(var_anom),
+                                         lower95_var_anom = quantile(var_anom, probs = 0.025),
+                                         upper95_var_anom = quantile(var_anom, probs = 0.975)),
+                                    by = .(treatment, stage, stream)]
+save(spt_boot_stream_s, file = "./outputs/spt_boot_stream_s.RData")
 
-spt_boot_ratio_s = spt_boot_ratio[ , .(mean_var = mean(var_ratio),
-                                       lower95_var = quantile(var_ratio, probs = 0.025),
-                                       upper95_var = quantile(var_ratio, probs = 0.975),
-                                       mean_var_anom = mean(var_anom_ratio),
-                                       lower95_var_anom = quantile(var_anom_ratio, probs = 0.025),
-                                       upper95_var_anom = quantile(var_anom_ratio, probs = 0.975)), .(by = treatment)]
-save(spt_boot_ratio_s, file = "./outputs/spt_boot_ratio_s.RData")
 
-spt_boot_var_s = spt_boot_var[ , .(mean_var = mean(var),
-                                   lower95_var = quantile(var, probs = 0.025),
-                                   upper95_var = quantile(var, probs = 0.975),
-                                   mean_var_anom = mean(var_anom),
-                                   lower95_var_anom = quantile(var_anom, probs = 0.025),
-                                   upper95_var_anom = quantile(var_anom, probs = 0.975)), by = .(treatment, stage)]
-g = ggplot(spt_boot_var) +
+spt_boot_stream_ratio = dcast(spt_boot_stream, iter + treatment + stream ~ stage, value.var = c("var", "var_anom"))
+spt_boot_stream_ratio[ , var_ratio := var_before / var_after]
+spt_boot_stream_ratio[ , var_anom_ratio := var_anom_before / var_anom_after]
+save(spt_boot_stream_ratio, file = "./outputs/spt_boot_stream_ratio.RData")
+
+spt_boot_stream_ratio_s = spt_boot_stream_ratio[ , .(var_ratio = median(var_ratio),
+                                                     lower95 = quantile(var_ratio, probs = 0.025),
+                                                     upper95 = quantile(var_ratio, probs = 0.975)),
+                                                by = .(treatment, stream)]
+save(spt_boot_stream_ratio_s, file = "./outputs/spt_boot_stream_ratio_s.RData")
+
+g = ggplot(spt_boot_stream) +
+    geom_violin(aes(x = stage, y = var_anom, fill = treatment, color = treatment), alpha = 0.25) +
+    geom_segment(data = spt_boot_stream_s, linewidth = 1,
+                 aes(x = stage, xend = stage, y = lower95_var_anom, yend = upper95_var_anom,
+                     color = treatment)) +
+    geom_point(data = spt_boot_var_s,
+               aes(x = stage, y = mean_var_anom, color = treatment), size = 2) +
+    scale_fill_manual(values = M1) +
+    scale_color_manual(values = M1) +
+    labs(x = "", y = "Spawn day variance") +
+    facet_wrap( ~ stream) +
+    theme_simple(grid = TRUE) +
+    theme(legend.position = "none")
+print(g)
+ggsave("./figures/fit-spawn-ex/boot_var_stream.jpg", width = 7, height = 6)
+
+g = ggplot(spt_boot_stream_ratio) +
+    geom_vline(xintercept = 1, color = "grey50", linetype = 2) +
+    geom_histogram(aes(x = var_anom_ratio, color = treatment, fill = treatment),
+                   bins = 30, position = "identity", alpha = 0.25) +
+    labs(x = "Variance ratio (var before / var after)", y = "Count") +
+    scale_color_manual(values = M1) +
+    scale_fill_manual(values = M1) +
+    facet_wrap( ~ stream, scale = "free") +
+    theme_simple(grid = TRUE)
+print(g)
+ggsave("./figures/fit-spawn-ex/boot_var_stream_ratio_hist.jpg", width = 7, height = 6)
+
+g = ggplot(spt_boot_stream_ratio_s) +
+    geom_vline(xintercept = 1, color = "grey50", linetype = 2) +
+    geom_point(aes(x = var_ratio, y = stream, color = treatment)) +
+    geom_linerange(linewidth = 0.5,
+                 aes(y = stream, xmin = lower95, xmax = upper95, color = treatment)) +
+    labs(x = "Variance ratio (var before / var after)", y = "", color = "") +
+    scale_color_manual(values = M1) +
+    scale_fill_manual(values = M1) +
+    theme_simple(grid = TRUE) +
+    theme(legend.position = "none")
+print(g)
+ggsave("./figures/fit-spawn-ex/boot_var_stream_ratio_dot.jpg", width = 7, height = 6)
+
+
+
+
+## Summarize by stage
+spt_boot_stage = spt_boot[ , .(var = var(doy), var_anom = var(doy_anom)),
+                          by = .(iter, treatment, stage)]
+save(spt_boot_stream, file = "./outputs/spt_boot_stage.RData")
+
+spt_boot_stage_s = spt_boot_stage[ , .(mean_var = mean(var),
+                                       lower95_var = quantile(var, probs = 0.025),
+                                       upper95_var = quantile(var, probs = 0.975),
+                                       mean_var_anom = mean(var_anom),
+                                       lower95_var_anom = quantile(var_anom, probs = 0.025),
+                                       upper95_var_anom = quantile(var_anom, probs = 0.975)),
+                                  by = .(treatment, stage)]
+save(spt_boot_stage_s, file = "./outputs/spt_boot_stage_s.RData")
+
+
+spt_boot_stage_ratio = dcast(spt_boot_stage, iter + treatment ~ stage, value.var = c("var", "var_anom"))
+spt_boot_stage_ratio[ , var_ratio := var_before / var_after]
+spt_boot_stage_ratio[ , var_anom_ratio := var_anom_before / var_anom_after]
+save(spt_boot_stage_ratio, file = "./outputs/spt_boot_stage_ratio.RData")
+
+spt_boot_stage_ratio_s = spt_boot_stage_ratio[ , .(var_ratio = median(var_ratio),
+                                                   lower95 = quantile(var_ratio, probs = 0.025),
+                                                   upper95 = quantile(var_ratio, probs = 0.975)),
+                                              by = .(treatment)]
+save(spt_boot_stage_ratio_s, file = "./outputs/spt_boot_stage_ratio_s.RData")
+
+g = ggplot(spt_boot_stage) +
     geom_violin(aes(x = stage, y = var_anom, fill = stage, color = stage), alpha = 0.25) +
-    geom_segment(data = spt_boot_var_s, linewidth = 1,
+    geom_segment(data = spt_boot_stage_s, linewidth = 1,
                  aes(x = stage, xend = stage, y = lower95_var_anom, yend = upper95_var_anom,
                      color = stage)) +
-    geom_point(data = spt_boot_var_s,
+    geom_point(data = spt_boot_stage_s,
                aes(x = stage, y = mean_var_anom, color = stage), size = 2) +
-    scale_fill_manual(values = M1[3:4]) +
-    scale_color_manual(values = M1[3:4]) +
+    scale_fill_manual(values = M1[3:5]) +
+    scale_color_manual(values = M1[3:5]) +
     labs(x = "", y = "Spawn day variance") +
     facet_wrap( ~ treatment) +
     theme_simple(grid = TRUE) +
     theme(legend.position = "none")
 print(g)
-ggsave("./figures/fit-spawn-ex/boot_var.jpg", width = 7, height = 6)
+ggsave("./figures/fit-spawn-ex/boot_var_stage.jpg", width = 7, height = 6)
 
-g = ggplot(spt_boot_ratio) +
+g = ggplot(spt_boot_stage_ratio) +
     geom_vline(xintercept = 1, color = "grey50", linetype = 2) +
     geom_histogram(aes(x = var_anom_ratio, color = treatment, fill = treatment),
                    bins = 30, position = "identity", alpha = 0.25) +
@@ -174,7 +260,20 @@ g = ggplot(spt_boot_ratio) +
     scale_fill_manual(values = M1) +
     theme_simple(grid = TRUE)
 print(g)
-ggsave("./figures/fit-spawn-ex/boot_var_ratio.jpg", width = 7, height = 6)
+ggsave("./figures/fit-spawn-ex/boot_var_stage_ratio_hist.jpg", width = 7, height = 6)
+
+g = ggplot(spt_boot_stage_ratio_s) +
+    geom_vline(xintercept = 1, color = "grey50", linetype = 2) +
+    geom_point(aes(x = var_ratio, y = treatment, color = treatment)) +
+    geom_linerange(linewidth = 0.5,
+                 aes(y = treatment, xmin = lower95, xmax = upper95, color = treatment)) +
+    labs(x = "Variance ratio (var before / var after)", y = "", color = "") +
+    scale_color_manual(values = M1) +
+    scale_fill_manual(values = M1) +
+    theme_simple(grid = TRUE) +
+    theme(legend.position = "none")
+print(g)
+ggsave("./figures/fit-spawn-ex/boot_var_stage_ratio_dot.jpg", width = 4, height = 6)
 
 
 
