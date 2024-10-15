@@ -7,11 +7,12 @@ unlink("./outputs", recursive = TRUE)
 
 rm(list = ls())
 
-cat("Sourcing load.R ...", "\n");      source("./load.R")
-cat("Sourcing data.R ...", "\n");      source("./data.R")
-cat("Sourcing fit-abund.R ...", "\n"); source("./fit-abund.R")
-cat("Sourcing fit-spawn.R ...", "\n"); source("./fit-spawn.R")
-cat("Sourcing pub.R ...", "\n");       source("./pub.R")
+cat("Sourcing load.R ...", "\n");         source("./load.R")
+cat("Sourcing data.R ...", "\n");         source("./data.R")
+cat("Sourcing fit-abund.R ...", "\n");    source("./fit-abund.R")
+cat("Sourcing fit-spawn.R ...", "\n");    source("./fit-spawn.R")
+cat("Sourcing fit-spawn-ex.R ...", "\n"); source("./fit-spawn-ex.R")
+cat("Sourcing pub.R ...", "\n");          source("./pub.R")
 cat("Done!", "\n")
 
 writeLines(capture.output(sessionInfo()), "session.txt")

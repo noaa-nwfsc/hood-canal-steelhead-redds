@@ -451,3 +451,27 @@ g = ggplot(dat) +
     theme(legend.position = c(0.75, 0.12))
 print(g)
 ggsave("./figures/pub/spawn_sd_ts.jpg", width = 4, height = 4)
+
+
+
+## Spawn variance: ratio -----------------------------------
+dat = copy(spt_boot_stream_ratio_s)
+dat[ , stream_lab := as.character(stream)]
+dat[ , stream_lab := gsub(" + Hatchery Cr", "", stream_lab, fixed = TRUE)]
+dat[ , stream_lab := gsub(", SF + Vance Cr", "", stream_lab, fixed = TRUE)]
+lev = c("Big Beef Creek", "Union River", "Little Quilcene River", "Tahuya River",
+        "Dewatto River", "Duckabush River", "Skokomish River")
+dat[ , stream_lab := factor(stream_lab, levels = rev(lev))]
+
+g = ggplot(dat) +
+    geom_vline(xintercept = 1, color = "grey50", linetype = 2) +
+    geom_point(aes(x = var_ratio, y = stream_lab, color = treatment)) +
+    geom_linerange(linewidth = 0.5,
+                 aes(y = stream_lab, xmin = lower95, xmax = upper95, color = treatment)) +
+    labs(x = "Variance ratio (before / after)", y = "", color = "") +
+    scale_color_manual(values = M1) +
+    scale_fill_manual(values = M1) +
+    theme_simple(grid = TRUE) +
+    theme(legend.position = "none")
+print(g)
+ggsave("./figures/pub/var_ratio_dot.jpg", width = 6, height = 6)
