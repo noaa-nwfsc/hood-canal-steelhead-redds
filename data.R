@@ -4,11 +4,7 @@ dir.create("./figures/data/", showWarnings = FALSE)
 
 
 ## Read raw data -------------------------------------------
-redd_raw = read_xlsx(
-    "./data/Reduced from (SGS Combined 2015 and 2023 pulls (2023 added on 09 29 2023)).xlsx",
-    sheet = "2007-2023 relevant pops",
-    col_types = c("text", rep("guess", 22), rep("text", 6)))
-redd_raw = as.data.table(redd_raw)
+redd_raw = fread("./data/hood_canal_redd_data.csv")
 
 ## Save outupts
 save(redd_raw, file = "./outputs/redd_raw.RData")
@@ -16,21 +12,11 @@ save(redd_raw, file = "./outputs/redd_raw.RData")
 
 
 ## Clean raw data ------------------------------------------
-redd_full = data.table(stream = redd_raw$Stream,
-                       year = redd_raw$RunYear,
-                       date = redd_raw$Date,
-                       doy = redd_raw$Dayofyear,
-                       type = redd_raw$Type,
-                       rm_upper = redd_raw$RMUpper,
-                       rm_lower = redd_raw$RMLower,
-                       rm_length = redd_raw$Length,
-                       redds = redd_raw$Redds,
-                       survey_type = redd_raw$Type,
-                       flow = redd_raw$flow,
-                       method = redd_raw$Method)
+redd_full = copy(redd_raw)
 redd_full[ , date := as.Date(date)]
 redd_full[ , doy := as.numeric(format(date, "%j"))]
 class(redd_full$date)
+sum(is.na(redd_full$date))
 
 ## Barry indicated this survey should be removed
 redd_full = redd_full[!(stream == "Big Beef Creek" & year == 2011 & is.na(rm_length))]
@@ -55,8 +41,7 @@ redd_full$rm_upper[ind] = rmlo
 redd_full$rm_length[ind] = rmlo - rmup
 
 ## Handle survey length for "spot check survey": set to 0.01
-## TODO: should spot checks be removed? length of 0.01 with 1 redd gives 100 redds / km
-redd_full[ , rm_length := ifelse(rm_length == 0 & type == "SPOT", 0.01, rm_length)]
+redd_full[ , rm_length := ifelse(rm_length == 0 & survey_type == "SPOT", 0.01, rm_length)]
 redd_full[ , rkm_length := rm_length * 1.60934]
 
 ## Add a combined Skokomish SF + Vance Cr. stream
