@@ -53,6 +53,21 @@ print(g)
 ggsave("./figures/pub/abundance_ln_ts.jpg", width = 4, height = 4)
 
 
+g = ggplot(dat) +
+    geom_vline(xintercept = yrs_break[1], color = "grey50", linetype = 2, linewidth = 0.25) +
+    geom_vline(xintercept = yrs_break[2], color = "grey50", linetype = 2, linewidth = 0.25) +
+    aes(x = year, y = abund, color = treatment) +
+    geom_point(size = 1) +
+    geom_line(linewidth = 0.5) +
+    labs(x = "Year", y = "Abundance", color = "") +
+    scale_color_manual(values = M1) +
+    facet_wrap( ~ stream_lab, ncol = 2, scales = "free_y") +
+    theme_simple(base_size = 8, grid = TRUE) +
+    theme(legend.position = c(0.75, 0.12))
+print(g)
+ggsave("./figures/pub/abundance_ts.jpg", width = 4, height = 4)
+
+
 
 ## Pairwise: abundance -------------------------------------
 nd = expand.grid(stage = c("before", "during", "after"),
@@ -82,10 +97,10 @@ s = m[ , .(mean = mean(value),
 s[ , perc_pos_lab := paste0(formatC(perc_pos * 100, digits = 2, format = "f"), "%")]
 s[ , y := c(rep(0.06, 3), rep(0, 3))]
 
-s_exp = m[ , .(mean = mean(value_exp),
-               lower95 = quantile(value_exp, probs = 0.025),
-               upper95 = quantile(value_exp, probs = 0.975),
-               perc_pos = sum(value_exp > 0) / .N), by = .(comparison, treatment)]
+# s_exp = m[ , .(mean = mean(value_exp),
+#                lower95 = quantile(value_exp, probs = 0.025),
+#                upper95 = quantile(value_exp, probs = 0.975),
+#                perc_pos = sum(value_exp > 0) / .N), by = .(comparison, treatment)]
 
 ## original scale
 x_exp = data.table(c_during_before = (exp(pred_mat[ , 2]) + exp(sig*sig / 2)) -
