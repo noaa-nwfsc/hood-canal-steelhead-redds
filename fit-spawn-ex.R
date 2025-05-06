@@ -122,7 +122,7 @@ var.test(sb$doy_anom, sa$doy_anom)   ## sig
 
 set.seed(4242)
 boot_dat_lst = vector("list", 1000)
-s = split(redd_ex, by = "stream")
+s = split(redd_ex, by = c("stream", "year"))
 for(i in 1:1000) {
     s_lst = vector("list", length(s))
     for(j in seq_along(s)) {
