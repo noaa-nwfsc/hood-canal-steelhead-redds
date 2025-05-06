@@ -363,11 +363,11 @@ ref_abn = data.table(year = row.names(ref_mat),
                      lower95 = ref_mat[ , "Q2.5"],
                      upper95 = ref_mat[ , "Q97.5"])
 ref_abn[ , year := as.numeric(year)]
-g = ggplot(ref_abn) +
+g1 = ggplot(ref_abn) +
     geom_hline(yintercept = 0, color = "grey50", linetype = 2) +
     geom_linerange(linewidth = 0.5, aes(x = year, ymin = lower95, ymax = upper95)) +
     geom_point(aes(x = year, y = estimate), size = 1) +
-    labs(x = "Year", y = "Effect") +
+    labs(x = "Year", y = "Year effect", subtitle = "A: abundance model") +
     theme_simple()
 print(g)
 ggsave("./figures/pub/fit_abn_yr_effect.jpg", width = 6, height = 4)
@@ -380,14 +380,19 @@ ref_spt = data.table(year = row.names(ref_mat),
                      lower95 = ref_mat[ , "Q2.5"],
                      upper95 = ref_mat[ , "Q97.5"])
 ref_spt[ , year := as.numeric(year)]
-g = ggplot(ref_spt) +
+g2 = ggplot(ref_spt) +
     geom_hline(yintercept = 0, color = "grey50", linetype = 2) +
     geom_linerange(linewidth = 0.5, aes(x = year, ymin = lower95, ymax = upper95)) +
     geom_point(aes(x = year, y = estimate), size = 1) +
-    labs(x = "Year", y = "Effect") +
+    labs(x = "Year", y = "Year effect", subtitle = "B: spawn timing model") +
     theme_simple()
 print(g)
 ggsave("./figures/pub/fit_spt_yr_effect.jpg", width = 6, height = 4)
+
+
+g = g1 / g2
+print(g)
+ggsave("./figures/pub/year_effects.jpg", width = 6, height = 7)
 
 
 
