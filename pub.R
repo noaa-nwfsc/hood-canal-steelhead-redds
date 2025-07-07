@@ -44,7 +44,7 @@ g = ggplot(dat) +
     geom_point(size = 1) +
     geom_line(linewidth = 0.5) +
     ylim(0, 7) +
-    labs(x = "Year", y = "log Abundance", color = "") +
+    labs(x = "Year", y = "log Redd count", color = "") +
     scale_color_manual(values = M1) +
     facet_wrap( ~ stream_lab, ncol = 2) +
     theme_simple(base_size = 8, grid = TRUE) +
@@ -59,7 +59,7 @@ g = ggplot(dat) +
     aes(x = year, y = abund, color = treatment) +
     geom_point(size = 1) +
     geom_line(linewidth = 0.5) +
-    labs(x = "Year", y = "Abundance", color = "") +
+    labs(x = "Year", y = "Redd count", color = "") +
     scale_color_manual(values = M1) +
     facet_wrap( ~ stream_lab, ncol = 2, scales = "free_y") +
     theme_simple(base_size = 8, grid = TRUE) +
@@ -93,6 +93,8 @@ m[ , comparison := factor(comparison, levels = c("during - before", "after - dur
 s = m[ , .(mean = mean(value),
            lower95 = quantile(value, probs = 0.025),
            upper95 = quantile(value, probs = 0.975),
+           lower80 = quantile(value, probs = 0.1),
+           upper80 = quantile(value, probs = 0.9),
            perc_pos = sum(value > 0) / .N), by = .(comparison, treatment)]
 s[ , perc_pos_lab := paste0(formatC(perc_pos * 100, digits = 2, format = "f"), "%")]
 s[ , y := c(rep(0.06, 3), rep(0, 3))]
@@ -140,13 +142,23 @@ leg = data.table(comparison = rep("during - before", 2), x = c(-0.95, 2.1), y = 
                  treatment = c("Control", "Supplemented"))
 leg[ , comparison := factor(comparison, levels = c("during - before", "after - during", "after - before"))]
 
+## % of posterior < 0
+caf = m[variable == "c_after_before", ]
+sum(caf$value < 0) / nrow(caf)
+
+saf = m[variable == "s_after_before", ]
+sum(saf$value > 0) / nrow(saf)
+
+
 g = ggplot(m) +
     geom_vline(xintercept = 0, color = "grey50", linetype = 2) +
     geom_density(aes(x = value, fill = treatment), color = NA, alpha = 0.2) +
-    geom_linerange(data = s, linewidth = 0.5,
+    geom_linerange(data = s, linewidth = 0.85,
+                   aes(y = y, xmin = lower80, xmax = upper80, color = treatment)) +
+    geom_linerange(data = s, linewidth = 0.3,
                    aes(y = y, xmin = lower95, xmax = upper95, color = treatment)) +
     geom_point(data = s, aes(x = mean, y = y, color = treatment), size = 1) +
-    labs(x = "Difference in log abundance", y = "Posterior density") +
+    labs(x = "Difference in log redd count", y = "Posterior density") +
     geom_text(data = ove, aes(x = -2.75, y = 1.3, label = overlap_lab), size = 3, color = "grey25", hjust = 0) +
     geom_text(data = leg, aes(x = x, y = y, label = treatment, color = treatment), size = 3) +
     scale_color_manual(values = M1) +
@@ -315,6 +327,8 @@ m[ , comparison := factor(comparison, levels = c("during - before", "after - dur
 s = m[ , .(mean = mean(value),
            lower95 = quantile(value, probs = 0.025),
            upper95 = quantile(value, probs = 0.975),
+           lower80 = quantile(value, probs = 0.1),
+           upper80 = quantile(value, probs = 0.9),
            perc_pos = sum(value > 0) / .N), by = .(comparison, treatment)]
 s[ , perc_pos_lab := paste0(formatC(perc_pos * 100, digits = 2, format = "f"), "%")]
 s[ , y := c(rep(0.01, 3), rep(0, 3))]
@@ -338,10 +352,12 @@ leg[ , comparison := factor(comparison, levels = c("during - before", "after - d
 g = ggplot(m) +
     geom_vline(xintercept = 0, color = "grey50", linetype = 2) +
     geom_density(aes(x = value, fill = treatment), color = NA, alpha = 0.2) +
-    geom_linerange(data = s, linewidth = 0.5,
-                 aes(y = y, xmin = lower95, xmax = upper95, color = treatment)) +
+    geom_linerange(data = s, linewidth = 0.85,
+                   aes(y = y, xmin = lower80, xmax = upper80, color = treatment)) +
+    geom_linerange(data = s, linewidth = 0.3,
+                   aes(y = y, xmin = lower95, xmax = upper95, color = treatment)) +
     geom_point(data = s, aes(x = mean, y = y, color = treatment), size = 1) +
-    labs(x = "Difference in Median Spawn Day", y = "Posterior density") +
+    labs(x = "Difference in median spawn day", y = "Posterior density") +
     geom_text(data = ove, aes(x = -15, y = 0.2, label = overlap_lab), size = 3, color = "grey25", hjust = 0) +
     geom_text(data = leg, aes(x = x, y = y, label = treatment, color = treatment), size = 3) +
     scale_color_manual(values = M1) +
